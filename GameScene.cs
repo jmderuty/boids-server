@@ -98,7 +98,9 @@ namespace Server
                 args.SendValue(new UseSkillResponse { error = true, errorMsg = errorMsg });
             }
         }
+#pragma warning disable CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
         private async Task<bool> UseSkillImpl(RequestContext<IScenePeerClient> arg)
+#pragma warning restore CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
         {
 
             var env = _scene.GetComponent<IEnvironment>();
@@ -405,7 +407,7 @@ namespace Server
         }
 
 
-        private async Task OnDisconnected(DisconnectedArgs arg)
+        private Task OnDisconnected(DisconnectedArgs arg)
         {
             Player player;
             if (_players.TryRemove(arg.Peer.Id, out player))
@@ -419,6 +421,7 @@ namespace Server
                     _scene.Broadcast("ship.remove", ship.id, PacketPriority.MEDIUM_PRIORITY, PacketReliability.RELIABLE);
                 }
             }
+            return Task.FromResult(true);
         }
 
         private async Task OnConnected(IScenePeerClient client)
