@@ -11,7 +11,7 @@ namespace Server
     public class App
     {
         public void Run(IAppBuilder builder)
-        {
+        { 
             builder.AddGameScene();
 
             var userConfig = new Users.UserManagementConfig()
