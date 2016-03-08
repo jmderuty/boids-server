@@ -15,6 +15,7 @@ namespace Server
         { 
             builder.AddGameScene();
 
+
             var userConfig = new Users.UserManagementConfig()
             {
                 SceneIdRedirect = Constants.MATCHMAKER_NAME,
