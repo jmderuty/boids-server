@@ -198,7 +198,6 @@
     <Compile Include="Weapon.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
     <None Include="Assets\Admin\leaderboard\libs\bootstrap-3.3.5-dist\css\bootstrap-theme.css.map" />
     <None Include="Assets\Admin\leaderboard\libs\bootstrap-3.3.5-dist\css\bootstrap.css.map" />
     <None Include="Assets\Admin\leaderboard\libs\bootstrap-3.3.5-dist\fonts\glyphicons-halflings-regular.eot" />
