@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Boids - stormancer.com</title>
+	<link rel="icon" type="image/png" href="stormancer-favicon.png" />
+	<style>
+		html, body, canvas#scene, canvas#netgraph { margin:0; padding:0; width:100%; height:100%; overflow:hidden; }
+		canvas#netgraph { display:none; width:100%; height:100px; position:absolute; bottom:0; right:0; transform: scale(-1, -1); image-rendering:pixelated; }
+		.bl { position:absolute; top:0; left:0; background-color:#ddd; color:#007; outline:1px solid #007; border-collapse:collapse; }
+		.bl th, .bl td { padding:2px 4px; border:1px solid #bbf; }
+		.alignLeft { text-align:left; }
+		.alignRight, .numberInt, .numberFloat { text-align:right; }
+		div.title { position:absolute; bottom:16px; left:16px; width:100%; color:#fff; font-size:200%; }
+		div.boidsCount { position:absolute; bottom:16px; right:16px; color:#fff; font-size:200%; }
+		#logo-stormancer { display:block; position:absolute; top:16px; width:100%; text-align:center; }
+	</style>
+	<script>
+		// STORMANCER PLUGIN SCRIPT STARTUP
+		var urlParams;
+		(window.onpopstate = function () {
+			var match,
+			pl = /\+/g,  // Regex for replacing addition symbol with a space
+			search = /([^&=]+)=?([^&]*)/g,
+			decode = function(s) { return decodeURIComponent(s.replace(pl, " ")); },
+			query = window.location.search.substring(1);
+
+			urlParams = {};
+			while (match = search.exec(query))
+			{
+				urlParams[decode(match[1])] = decode(match[2]);
+			}
+		})();
+		var xToken = urlParams["x-token"];
+		var sceneName = urlParams["sceneName"] || "main";
+		document.cookie = "x-token="+encodeURIComponent(xToken);
+		var splitted = window.location.href.split('/');
+		var accountId = splitted[3];
+		var applicationName = splitted[4];
+		var adminPluginId = splitted[7];
+	</script>
+</head>
+
+<body>
+	<canvas id="scene"></canvas>
+	<canvas id="netgraph"></canvas>
+
+	<div id="logo-stormancer"><a href="http://www.stormancer.com"><img src="Stormancer.png"></a></div>
+
+	<div class="title">Network demo</div>
+	<div class="boidsCount"><span id="boidsCount">0</span> player<span id="boidsCountS">s</span></div>
+	
+	<table class="bl" style="display:none;">
+		<tr><th><label for="debugCheckbox">debug</th><td><input id="debugCheckbox" type="checkbox" onclick="toggleDebug()" autocomplete="off"></td></tr>
+		<tr style="display:none;"><td colspan="2"><button onclick="startBoid()">Start boid</button></td></tr>
+		<!--<tr><th class="alignLeft">boids count</th><td id="boidsCount" class="numberInt"></td></tr>-->
+		<!--<tr><th class="alignLeft">delta send</th><td id="deltaSend" class="numberFloat"></td></tr>-->
+		<!--<tr><th class="alignLeft">delta send avg</th><td id="deltaSendAvg" class="numberFloat"></td></tr>-->
+		<!--<tr><th class="alignLeft">delta receive</th><td id="deltaReceive" class="numberFloat"></td></tr>-->
+		<!--<tr><th class="alignLeft">delta receive avg</th><td id="deltaReceiveAvg" class="numberFloat"></td></tr>-->
+		<!--<tr><th class="alignLeft">ping</th><td id="ping" class="numberFloat"></td></tr>-->
+		<tr><th class="alignLeft">delta render</th><td id="deltaRender" class="numberFloat"></td></tr>
+		<tr><th class="alignLeft">time</th><td id="time" class="numberFloat"></td></tr>
+		<!--<tr><th class="alignLeft">packetId</th><td id="packetId" class="numberInt"></td></tr>-->
+	</table>
+	
+	<script src="libs/jquery-1.11.3.min.js"></script>
+	<script src="libs/three.min.js"></script>
+	<script src="libs/stormancer.js"></script>
+	<script src="average.js"></script>
+	<script src="checker.js"></script>
+	<script src="netmobile.js"></script>
+	<script src="netgraph.js"></script>
+	<script src="boid.js"></script>
+	<script src="explosion.js"></script>
+	<script src="laser.js"></script>
+	<script src="missile.js"></script>
+	<script src="main.js"></script>
+</body>
+</html>
