@@ -28,10 +28,9 @@ namespace Server
             userConfig.AuthenticationProviders.Add(new ViewerAuthenticationProvider());
             builder.AddPlugin(new UsersManagementPlugin(userConfig));
 
-            var admintest = builder.AdminPlugin("admintest", Stormancer.Server.Admin.AdminPluginHostVersion.V0_1).Name("admintest");
-            //admintest.Get["/"] = ctx => "helloworld";
+           
 
-            var viewer = builder.AdminPlugin("viewer", Stormancer.Server.Admin.AdminPluginHostVersion.V0_1).Name("Viewer");
+            var viewer = builder.AdminPlugin("viewer").Name("Viewer");
         }
     }
 }

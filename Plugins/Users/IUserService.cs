@@ -11,7 +11,7 @@ namespace Server.Users
     public interface IUserService
     {
         Task<User> GetUser(string uid);
-        Task<User> AddAuthentication(User user,string provider, JObject authData); 
+        Task<User> AddAuthentication(User user,string provider, JObject authData, string cacheId); 
         Task<User> GetUserByClaim(string provider, string claimPath, string login);
         Task<User> CreateUser(string uid, JObject userData);
         Task UpdateUserData<T>(string uid, T data);

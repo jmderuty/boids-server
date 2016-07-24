@@ -5,13 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Server.Plugins.Nat
+namespace Server.Plugins.Notification
 {
     public class App
     {
         public void Run(IAppBuilder builder)
         {
-            builder.AddPlugin(new NatPunchthroughPlugin());
+            builder.AddPlugin(new NotificationPlugin());
         }
     }
 }

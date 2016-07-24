@@ -8,6 +8,7 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Linq;
 using Server.Plugins.Configuration;
+using Newtonsoft.Json.Linq;
 
 namespace Server.Plugins.Steam
 {
@@ -17,9 +18,9 @@ namespace Server.Plugins.Steam
         private const string FallbackApiRoot = "https://api.steampowered.com";
         private const string FallbackApiRooWithIp = "https://208.64.202.87";
 
-        private readonly string _apiKey;
-        private readonly uint _appId;
-       
+        private string _apiKey;
+        private uint _appId;
+        
         private bool _usemockup;
 
         public SteamService(IConfiguration configuration)
@@ -27,13 +28,7 @@ namespace Server.Plugins.Steam
 
             var steamElement = configuration.Settings?.steam;
 
-            _apiKey = (string)steamElement?.apiKey;
 
-            var dynamicAppId = steamElement?.appId;
-            if (dynamicAppId != null)
-            {
-                _appId = (uint)dynamicAppId;
-            }
 
             ApplyConfig(steamElement);
 
@@ -42,6 +37,14 @@ namespace Server.Plugins.Steam
 
         private void ApplyConfig(dynamic steamElement)
         {
+            _apiKey = (string)steamElement?.apiKey;
+
+            var dynamicAppId = steamElement?.appId;
+            if (dynamicAppId != null)
+            {
+                _appId = (uint)dynamicAppId;
+            }
+
             var dynamicUseMockup = steamElement?.usemockup;
             if (dynamicUseMockup != null)
             {
@@ -51,7 +54,7 @@ namespace Server.Plugins.Steam
 
         public async Task<ulong?> AuthenticateUserTicket(string ticket)
         {
-            if(_usemockup)
+            if (_usemockup)
             {
                 return (ulong)ticket.GetHashCode();
             }
@@ -70,7 +73,7 @@ namespace Server.Plugins.Steam
 
                 if (steamResponse.response.error != null)
                 {
-                    return null;
+                    throw new Exception($"The Steam API failed to authenticate user ticket : {steamResponse.response.error.errorcode} : '{steamResponse.response.error.errordesc}'. AppId : {_appId}");
                 }
                 else
                 {
@@ -81,11 +84,92 @@ namespace Server.Plugins.Steam
 
         }
 
+        public async Task<string> OpenVACSession(string steamId)
+        {
+            const string uri = "ICheatReportingService/StartSecureMultiplayerSession/v0001/";
+            var p = new Dictionary<string, string> {
+                {"key",_apiKey },
+                {"appid",_appId.ToString() },
+                {"steamid",steamId }
+            };
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(ApiRoot);
+
+                using (var response = await client.PostAsync(uri, new FormUrlEncodedContent(p)))
+                {
+                    response.EnsureSuccessStatusCode();
+                    var json = await response.Content.ReadAsStringAsync();
+                    dynamic j = JObject.Parse(json);
+                    var success = (bool)j.response.success;
+                    var sessionId = (string)j.response.session_id;
+                    return sessionId;
+                }
+
+            }
+
+        }
+
+        public async Task CloseVACSession(string steamId, string sessionId)
+        {
+            const string uri = "ICheatReportingService/EndSecureMultiplayerSession/v0001/";
+            var p = new Dictionary<string, string> {
+                {"key",_apiKey },
+                {"appid",_appId.ToString() },
+                {"steamid",steamId },
+                {"session_id",sessionId }
+            };
+
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(ApiRoot);
+
+                using (var response = await client.PostAsync(uri, new FormUrlEncodedContent(p)))
+                {
+                    response.EnsureSuccessStatusCode();
+                    var json = await response.Content.ReadAsStringAsync();
+                    var j = JObject.Parse(json);
+
+                }
+
+            }
+        }
+
+        public async Task<bool> RequestVACStatusForUser(string steamId, string sessionId)
+        {
+            const string uri = "ICheatReportingService/RequestVacStatusForUser/v0001/";
+            var p = new Dictionary<string, string> {
+                {"key",_apiKey },
+                {"appid",_appId.ToString() },
+                {"steamid",steamId },
+                {"session_id",sessionId }
+            };
+
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(ApiRoot);
+
+                using (var response = await client.PostAsync(uri, new FormUrlEncodedContent(p)))
+                {
+
+                    response.EnsureSuccessStatusCode();
+                    var json = await response.Content.ReadAsStringAsync();
+                    dynamic j = JObject.Parse(json);
+                    var sessionVerified = (bool)j.response.session_verified;
+                    var success = (bool)j.response.success;
+                    return success && sessionVerified;
+
+
+                }
+
+            }
+        }
+
         public async Task<Dictionary<ulong, SteamPlayerSummary>> GetPlayerSummaries(IEnumerable<ulong> steamIds)
         {
-            if(_usemockup)
+            if (_usemockup)
             {
-                return steamIds.ToDictionary(id => id, id => new SteamPlayerSummary());
+                return steamIds.ToDictionary(id => id, id => new SteamPlayerSummary { personaname = "player" + id.ToString(), steamid = id });
             }
 
             const string GetPlayerSummariesUri = "ISteamUser/GetPlayerSummaries/V0002/";

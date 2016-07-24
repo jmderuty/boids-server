@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using Stormancer;
 using Stormancer.Server.Components;
 using Stormancer.Diagnostics;
+using Nest;
 
 namespace Server.Users
 {
@@ -16,7 +17,7 @@ namespace Server.Users
         private readonly Database.IESClientFactory _clientFactory;
         private readonly string _indexName;
         private readonly ILogger _logger;
-
+        private readonly Lazy<IEnumerable<IUserEventHandler>> _eventHandlers;
 
         private static bool _mappingChecked = false;
         private static AsyncLock _mappingCheckedLock = new AsyncLock();
@@ -25,29 +26,27 @@ namespace Server.Users
 
             await (await Client()).MapAsync<User>(m => m
                 .DynamicTemplates(templates => templates
-                    .Add(t => t
-                        .Name("auth")
-                        .PathMatch("auth.*")
-                        .MatchMappingType("string")
-                        .Mapping(ma => ma.String(s => s.Index(Nest.FieldIndexOption.NotAnalyzed)))
+                    .DynamicTemplate("auth", t => t
+                         .PathMatch("auth.*")
+                         .MatchMappingType("string")
+                         .Mapping(ma => ma.String(s => s.Index(Nest.FieldIndexOption.NotAnalyzed)))
                         )
-                    .Add(t => t
-                        .Name("data")
-                        .PathMatch("userData.*")
-                        .MatchMappingType("string")
-                        .Mapping(ma => ma.String(s => s.Index(Nest.FieldIndexOption.NotAnalyzed)))
+                    .DynamicTemplate("data", t => t
+                         .PathMatch("userData.*")
+                         .MatchMappingType("string")
+                         .Mapping(ma => ma.String(s => s.Index(Nest.FieldIndexOption.NotAnalyzed)))
                         )
                      )
                  );
         }
 
 
-        public UserService(UserManagementConfig config, Database.IESClientFactory clientFactory, IEnvironment environment, ILogger logger)
+        public UserService(UserManagementConfig config, Database.IESClientFactory clientFactory, IEnvironment environment, ILogger logger, Lazy<IEnumerable<IUserEventHandler>> eventHandlers)
         {
             _indexName = (string)(environment.Configuration.index);
-
+            _eventHandlers = eventHandlers;
             _logger = logger;
-            _logger.Log(LogLevel.Trace, "users", $"Using index {_indexName}", new { index = _indexName });
+            //_logger.Log(LogLevel.Trace, "users", $"Using index {_indexName}", new { index = _indexName });
 
             _clientFactory = clientFactory;
         }
@@ -69,13 +68,14 @@ namespace Server.Users
             }
             return client;
         }
-        public async Task<User> AddAuthentication(User user, string provider, JObject authData)
+        public async Task<User> AddAuthentication(User user, string provider, JObject authData, string cacheId)
         {
             var c = await Client();
 
             user.Auth[provider] = authData;
 
             await c.IndexAsync(user);
+            await c.IndexAsync<AuthenticationClaim>(new AuthenticationClaim { Id = provider + "_" + cacheId, UserId = user.Id });
             return user;
         }
 
@@ -93,22 +93,89 @@ namespace Server.Users
         public async Task<User> GetUserByClaim(string provider, string claimPath, string login)
         {
             var c = await Client();
-            var r = await c.SearchAsync<User>(sd => sd.Query(qd => qd.Term("auth." + provider + "." + claimPath, login)));
-            var h = r.Hits.FirstOrDefault();
-            if (h != null)
+            var cacheId = provider + "_" + login;
+            var claim = await c.GetAsync<AuthenticationClaim>(cacheId);
+            if (claim.Found)
             {
-                return h.Source;
+                var r = await c.GetAsync<User>(claim.Source.UserId);
+                if (r.Found)
+                {
+                    return r.Source;
+                }
+                else
+                {
+                    return null;
+                }
             }
             else
             {
-                return null;
+                var r = await c.SearchAsync<User>(sd => sd.Query(qd => qd.Term("auth." + provider + "." + claimPath, login)));
+
+
+
+                User user;
+                if (r.Hits.Count() > 1)
+                {
+                    user = await MergeUsers(r.Hits.Select(h => h.Source));
+                }
+                else
+                {
+                    var h = r.Hits.FirstOrDefault();
+
+
+                    if (h != null)
+                    {
+
+                        user = h.Source;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+
+                await c.IndexAsync<AuthenticationClaim>(new AuthenticationClaim { Id = cacheId, UserId = user.Id });
+                return user;
             }
+
+        }
+
+        private async Task<User> MergeUsers(IEnumerable<User> users)
+        {
+            var handlers = _eventHandlers.Value;
+            foreach (var handler in handlers)
+            {
+                await handler.OnMergingUsers(users);
+            }
+
+            var sortedUsers = users.OrderBy(u => u.CreatedOn).ToList();
+            var mainUser = sortedUsers.First();
+
+            var data = new Dictionary<IUserEventHandler, object>();
+            foreach (var handler in handlers)
+            {
+                data[handler] = await handler.OnMergedUsers(sortedUsers.Skip(1), mainUser);
+            }
+
+            var c = await Client();
+            _logger.Log(Stormancer.Diagnostics.LogLevel.Info, "users", "Merging users.", new { deleting = sortedUsers.Skip(1), into = mainUser });
+            await c.BulkAsync(desc =>
+            {
+                desc = desc.DeleteMany<User>(sortedUsers.Skip(1).Select(u => u.Id))
+                           .Index<User>(i => i.Document(mainUser));
+                foreach (var handler in handlers)
+                {
+                    desc = handler.OnBuildMergeQuery(sortedUsers.Skip(1), mainUser, data[handler], desc);
+                }
+                return desc;
+            });
+            return mainUser;
         }
 
         public async Task<User> GetUser(string uid)
         {
             var c = await Client();
-            var r = await c.GetAsync<User>(gd => gd.Id(uid));
+            var r = await c.GetAsync<User>(uid);
             if (r.Source != null)
             {
                 return r.Source;

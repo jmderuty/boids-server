@@ -13,11 +13,22 @@ namespace Server.Users
         {
             Auth = new JObject();
             UserData = new JObject();
+            CreatedOn = DateTime.UtcNow;
         }
 
         public string Id { get; set; }
 
+    
         public JObject Auth { get; set; }
         public JObject UserData { get; set; } 
+
+        public DateTime CreatedOn { get; set; }
+    }
+
+    public class AuthenticationClaim
+    {
+        public string Id { get; set; }
+
+        public string UserId { get; set; }
     }
 }

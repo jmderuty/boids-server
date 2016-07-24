@@ -10,7 +10,7 @@ namespace Server.Users
             
         void AddMetadata(Dictionary<string, string> result);
 
-        void AdjustScene(ISceneHost scene);
+        void Initialize(ISceneHost scene);
 
         Task<AuthenticationResult> Authenticate(Dictionary<string, string> authenticationCtx, IUserService userService);
     }

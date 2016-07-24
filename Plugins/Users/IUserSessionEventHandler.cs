@@ -9,8 +9,8 @@ namespace Server.Users
 {
     public interface IUserSessionEventHandler
     {
-        void OnLoggedIn(IScenePeerClient client, User user);
+        Task OnLoggedIn(IScenePeerClient client, User user);
 
-        void OnLoggedOut(IScenePeerClient client, User user);
+        Task OnLoggedOut(IScenePeerClient client, User user);
     }
 }

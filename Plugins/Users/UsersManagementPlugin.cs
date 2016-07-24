@@ -39,12 +39,12 @@ namespace Server.Users
             b.Register<UserToGroupIndex>().SingleInstance();
             b.Register<GroupsIndex>().SingleInstance();
             b.Register<SingleNodeActionStore>().As<IActionStore>().SingleInstance();
-
+            b.Register<SceneAuthorizationController>();
             b.Register<UserManagementConfig>(_config);
-           
+
             b.Register<UserService>().As<IUserService>();
             b.Register<UserSessions>().As<IUserSessions>();
-            
+
         }
         private void HostStarting(IHost host)
         {
@@ -59,11 +59,11 @@ namespace Server.Users
         {
             scene.AddProcedure("login", async p =>
             {
-                scene.GetComponent<ILogger>().Log(LogLevel.Trace, "user.login", "Logging in an user.", null);
+                //scene.GetComponent<ILogger>().Log(LogLevel.Trace, "user.login", "Logging in an user.", null);
 
                 var accessor = scene.DependencyResolver.Resolve<Management.ManagementClientAccessor>();
                 var authenticationCtx = p.ReadObject<Dictionary<string, string>>();
-                scene.GetComponent<ILogger>().Log(LogLevel.Trace, "user.login", "Authentication context read.", authenticationCtx);
+                //scene.GetComponent<ILogger>().Log(LogLevel.Trace, "user.login", "Authentication context read.", authenticationCtx);
                 var result = new LoginResult();
                 var userService = scene.DependencyResolver.Resolve<IUserService>();
                 var userSessions = scene.DependencyResolver.Resolve<IUserSessions>();
@@ -78,18 +78,21 @@ namespace Server.Users
 
                     if (authResult.Success)
                     {
-                        scene.GetComponent<ILogger>().Log(LogLevel.Trace, "user.login", "Authentication successful.", authResult);
+                        //scene.GetComponent<ILogger>().Log(LogLevel.Trace, "user.login", "Authentication successful.", authResult);
+
+                       
+                        await userSessions.SetUser(p.RemotePeer, authResult.AuthenticatedUser);
 
                         result.Success = true;
                         var client = await accessor.GetApplicationClient();
                         result.UserId = authResult.AuthenticatedUser.Id;
                         result.Token = await client.CreateConnectionToken(_config.OnRedirect(authResult), _config.UserDataSelector(authResult));
-                        await userSessions.SetUser(p.RemotePeer, authResult.AuthenticatedUser);
+
                         break;
                     }
                     else
                     {
-                        scene.GetComponent<ILogger>().Log(LogLevel.Trace, "user.login", "Authentication failed.", authResult);
+                        //scene.GetComponent<ILogger>().Log(LogLevel.Trace, "user.login", "Authentication failed.", authResult);
 
                         result.ErrorMsg = authResult.ReasonMsg;
                         break;
@@ -103,28 +106,28 @@ namespace Server.Users
                     }
                 }
 
-                if (result.Success)
-                {
-                    scene.GetComponent<ILogger>().Log(LogLevel.Trace, "user.login", "User logged in.", null);
-                }
-                else
-                {
-                    scene.GetComponent<ILogger>().Log(LogLevel.Trace, "user.login", "User failed to log in.", null);
-                }
                 p.SendValue(result);
+                if (!result.Success)
+                {
+                    var _ = Task.Delay(2000).ContinueWith(t => p.RemotePeer.DisconnectFromServer("Authentication failed"));
+                }
             });
 
-            scene.AddController<GroupController>();
-
+            //scene.AddController<GroupController>();
+            scene.AddController<SceneAuthorizationController>();
             scene.Disconnected.Add(async args =>
             {
                 await scene.GetComponent<IUserSessions>().LogOut(args.Peer);
             });
 
-            foreach (var provider in _config.AuthenticationProviders)
-            {
-                provider.AdjustScene(scene);
-            }
+            scene.Starting.Add(_ => {
+                foreach (var provider in _config.AuthenticationProviders)
+                {
+                    provider.Initialize(scene);
+                }
+                return Task.FromResult(true);
+            });
+           
 
         }
         private Dictionary<string, string> GetAuthenticateRouteMetadata()

@@ -27,22 +27,24 @@ namespace Server.Database
         {
 
             ctx.HostDependenciesRegistration += (IDependencyBuilder b) =>
-              {
-                  b.Register<ESClientFactory>().As<IESClientFactory>();
-              };
+            {
+                b.Register<ESClientFactory>().As<IESClientFactory>().SingleInstance();
+            };
 
         }
     }
     public interface IESClientFactory
     {
         Task<Nest.IElasticClient> CreateClient(string index);
+
     }
-    class ESClientFactory : IESClientFactory
+    class ESClientFactory : IESClientFactory, IDisposable
     {
         private IEnvironment _environment;
         private AsyncLock _lock = new AsyncLock();
         private IEnumerable<Stormancer.Server.Index> _indices;
-
+        private Nest.ElasticClient _client;
+        //private List<Elasticsearch.Net.Connection.HttpClientConnection> _connections = new List<Elasticsearch.Net.Connection.HttpClientConnection>();
         public ESClientFactory(IEnvironment environment)
         {
             _environment = environment;
@@ -50,24 +52,42 @@ namespace Server.Database
 
         public async Task<IElasticClient> CreateClient(string indexName)
         {
-            if (_indices == null)
+            if (_client == null)
             {
-                using (await _lock.LockAsync())
+                if (_indices == null || !_indices.Any(i => i.name == indexName))
                 {
-                    if (_indices == null)
+                    using (await _lock.LockAsync())
                     {
-                        _indices = await _environment.ListIndices();
+                        if (_indices == null || !_indices.Any(i => i.name == indexName))
+                        {
+                            _indices = await _environment.ListIndices();
+                        }
                     }
                 }
+
+                //var endpoint = (await _environment.GetApplicationInfos()).ApiEndpoint;
+                var index = _indices.FirstOrDefault(i => i.name == indexName);
+                var indexPath = indexName;
+                if (index != null)
+                {
+                    indexPath = index.accountId + "-" + index.name;
+                    
+                }
+                //var connection = new Elasticsearch.Net.Connection.HttpClientConnection(
+                //     new ConnectionSettings(),
+                //     new AuthenticatedHttpClientHandler(index));
+                //_connections.Add(connection);
+                _client = new Nest.ElasticClient(new ConnectionSettings(new Elasticsearch.Net.SniffingConnectionPool(new[] { new Uri("http://localhost:9200") })).DefaultIndex(indexPath).MaximumRetries(10).MaxRetryTimeout(TimeSpan.FromSeconds(30)));
             }
+            return _client;
+        }
 
-            var endpoint = (await _environment.GetApplicationInfos()).ApiEndpoint;
-            var index = _indices.FirstOrDefault(i => i.name == indexName);
-            var connection = new Elasticsearch.Net.Connection.HttpClientConnection(
-                 new ConnectionSettings(),
-                 new AuthenticatedHttpClientHandler(index));
-
-            return new Nest.ElasticClient(new ConnectionSettings(new Uri(endpoint + "/" + index.accountId + "/_indices/_q"), index.name), connection);
+        public void Dispose()
+        {
+            //foreach (var c in _connections)
+            //{
+            //    c.Dispose();
+            //}
         }
     }
 }

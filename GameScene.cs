@@ -371,8 +371,7 @@ namespace Server
                     var rot = reader.ReadSingle();
                     //var timestamp = reader.ReadInt64();
                     var timestamp = _scene.GetComponent<IEnvironment>().Clock;
-                    var ls = _scene.GetComponent<Server.Leaderboards.ILeaderboardsService>();
-
+                   
                     Ship ship;
                     if (_ships.TryGetValue(shipId, out ship))
                     {

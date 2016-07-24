@@ -15,9 +15,7 @@ namespace Server.Users
             result.Add("provider.viewer", "enabled");
         }
 
-        public void AdjustScene(ISceneHost scene)
-        {
-        }
+       
 
         public Task<AuthenticationResult> Authenticate(Dictionary<string, string> authenticationCtx, IUserService _userService)
         {
@@ -29,6 +27,11 @@ namespace Server.Users
             var user = new User() { Id = "viewer" };
 
             return Task.FromResult( AuthenticationResult.CreateSuccess(user, PROVIDER_NAME, authenticationCtx));
+        }
+
+        public void Initialize(ISceneHost scene)
+        {
+            
         }
     }
 }

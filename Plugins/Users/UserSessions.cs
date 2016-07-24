@@ -25,11 +25,11 @@ namespace Server.Users
         private readonly ISceneHost _scene;
         private readonly ILogger logger;
 
-        private void RunEventHandler<T>(IEnumerable<T> eh, Action<T> action)
+        private async Task RunEventHandler<T>(IEnumerable<T> eh, Func<T,Task> action)
         {
             foreach (var h in eh)
             {
-                action(h);
+                await action(h);
             }
         }
         public UserSessions(IUserService userService,
@@ -70,8 +70,8 @@ namespace Server.Users
             if (result.Success)
             {
                 await _userPeerIndex.TryRemove(result.Value.Id);
-                RunEventHandler(_eventHandlers, h => h.OnLoggedOut(peer, result.Value));
-                logger.Trace("usersessions", $"removed '{result.Value.Id}' (peer : '{peer.Id}') in scene '{_scene.Id}'.");
+                await RunEventHandler(_eventHandlers, h => h.OnLoggedOut(peer, result.Value));
+                //logger.Trace("usersessions", $"removed '{result.Value.Id}' (peer : '{peer.Id}') in scene '{_scene.Id}'.");
             }
           
 
@@ -89,8 +89,8 @@ namespace Server.Users
             }
             await _userPeerIndex.TryAdd(user.Id, peer.Id);
             await _peerUserIndex.TryAdd(peer.Id.ToString(), user);
-            RunEventHandler(_eventHandlers, h => h.OnLoggedIn(peer, user));
-            logger.Trace("usersessions", $"Added '{user.Id}' (peer : '{peer.Id}') in scene '{_scene.Id}'.");
+            await RunEventHandler(_eventHandlers, h => h.OnLoggedIn(peer, user));
+            //logger.Trace("usersessions", $"Added '{user.Id}' (peer : '{peer.Id}') in scene '{_scene.Id}'.");
         }
 
 
@@ -120,13 +120,13 @@ namespace Server.Users
                 //logger.Trace("usersessions", $"found '{userId}' (peer : '{result.Value}', '{peer.Id}') in scene '{_scene.Id}'.");
                 if (peer == null)
                 {
-                    logger.Trace("usersessions", $"didn't found '{userId}' (peer : '{result.Value}') in scene '{_scene.Id}'.");
+                    //logger.Trace("usersessions", $"didn't found '{userId}' (peer : '{result.Value}') in scene '{_scene.Id}'.");
                 }
                 return peer;
             }
             else
             {
-                logger.Trace("usersessions", $"didn't found '{userId}' in userpeer index.");
+                //logger.Trace("usersessions", $"didn't found '{userId}' in userpeer index.");
                 return null;
             }
         }
