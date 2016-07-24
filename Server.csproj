@@ -56,8 +56,9 @@
       <HintPath>packages\Stormancer.Core.1.3.0.6\lib\net45\Stormancer.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Stormancer.Management.Client, Version=1.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Stormancer.Management.Client.1.2.1.0\lib\net45\Stormancer.Management.Client.dll</HintPath>
+    <Reference Include="Stormancer.Management.Client, Version=1.3.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Stormancer.Management.Client.1.3.2\lib\net45\Stormancer.Management.Client.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Stormancer.Server, Version=1.6.2.3, Culture=neutral, processorArchitecture=MSIL">
@@ -213,6 +214,8 @@
     <Content Include="Assets\Admin\viewer\netgraph.js" />
     <Content Include="Assets\Admin\viewer\netmobile.js" />
     <Content Include="Assets\Admin\viewer\workerBoid.js" />
+    <Content Include="bin\Elasticsearch.Net.dll" />
+    <Content Include="bin\Nest.dll" />
     <Content Include="bin\Stormancer.Management.Client.dll" />
   </ItemGroup>
   <ItemGroup>

@@ -27,7 +27,7 @@ namespace Server.Users
             var user = await _sessions.GetUser(ctx.RemotePeer);
             var sceneId = ctx.ReadObject<string>();
             _logger.Log(LogLevel.Debug, "authorization", $"Authorizing access to scene '{sceneId}'", new { sceneId, user.Id });
-            var token = await client.CreateConnectionToken(sceneId, new byte[0], "application/octet-stream");
+            var token = await client.CreateConnectionToken<bool>(sceneId,true);
 
             ctx.SendValue(token);
         }
