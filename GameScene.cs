@@ -13,14 +13,15 @@ using Stormancer.Plugins;
 using System.IO;
 using System.Reactive.Concurrency;
 using Stormancer.Server.Components;
+using Stormancer.Server;
 
 namespace Server
 {
     static class GameSceneExtensions
     {
-        public static void AddGameScene(this IAppBuilder builder)
+        public static void AddGameScene(this IHost builder)
         {
-            builder.SceneTemplate("game", scene => new GameScene(scene));
+            builder.AddSceneTemplate("game", scene => new GameScene(scene));
         }
     }
 

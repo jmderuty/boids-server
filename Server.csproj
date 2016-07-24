@@ -56,9 +56,9 @@
       <HintPath>packages\Stormancer.Core.1.3.0.6\lib\net45\Stormancer.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Stormancer.Management.Client, Version=1.3.2.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Stormancer.Management.Client, Version=1.3.2.1, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Stormancer.Management.Client.1.3.2\lib\net45\Stormancer.Management.Client.dll</HintPath>
+      <HintPath>packages\Stormancer.Management.Client.1.3.2.1\lib\net45\Stormancer.Management.Client.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Stormancer.Server, Version=1.6.2.3, Culture=neutral, processorArchitecture=MSIL">
@@ -96,6 +96,7 @@
     <Compile Include="Constants.cs" />
     <Compile Include="GameScene.cs" />
     <Compile Include="GameStatus.cs" />
+    <Compile Include="GamePlugin.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Plugins\API\ApiExceptionContext.cs" />
     <Compile Include="Plugins\API\ApiPlugin.cs" />
@@ -120,6 +121,7 @@
     <Compile Include="Plugins\Database\ESClientFactory.cs" />
     <Compile Include="Plugins\Database\IIndex.cs" />
     <Compile Include="Plugins\Database\IndexExtensions.cs" />
+    <Compile Include="Plugins\Management\ManagementClientExtensions.cs" />
     <Compile Include="Plugins\Management\ManagementPlugin.cs" />
     <Compile Include="Plugins\Matchmaking\Default\DefaultMatchmaker.cs" />
     <Compile Include="Plugins\Matchmaking\Default\DefaultMatchmakingResolver.cs" />

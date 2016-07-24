@@ -12,11 +12,11 @@ namespace Server
     {
         public void Run(IAppBuilder builder)
         { 
-            builder.AddGameScene();
+            
 
             var userConfig = new Users.UserManagementConfig()
             {
-                SceneIdRedirect = Constants.MATCHMAKER_NAME,
+                SceneIdRedirect = "main",
                 UserDataSelector = r => new PlayerInfos
                 {
                     isObserver = r.Provider == ViewerAuthenticationProvider.PROVIDER_NAME,
@@ -27,7 +27,7 @@ namespace Server
             userConfig.AuthenticationProviders.Add(new LoginPasswordAuthenticationProvider());
             userConfig.AuthenticationProviders.Add(new ViewerAuthenticationProvider());
             builder.AddPlugin(new UsersManagementPlugin(userConfig));
-
+            builder.AddPlugin(new GamePlugin());
            
 
             var viewer = builder.AdminPlugin("viewer").Name("Viewer");

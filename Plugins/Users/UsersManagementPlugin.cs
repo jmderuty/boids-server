@@ -9,6 +9,7 @@ using Stormancer.Server;
 using Stormancer;
 using Stormancer.Diagnostics;
 using Server.Plugins.API;
+using Server.Management;
 
 namespace Server.Users
 {
@@ -28,6 +29,7 @@ namespace Server.Users
         public void Build(HostPluginBuildContext ctx)
         {
             ctx.HostStarting += HostStarting;
+            ctx.HostStarted += HostStarted;
             ctx.HostDependenciesRegistration += RegisterDependencies;
 
         }
@@ -46,6 +48,8 @@ namespace Server.Users
             b.Register<UserSessions>().As<IUserSessions>();
 
         }
+       
+
         private void HostStarting(IHost host)
         {
             host.AddSceneTemplate("authenticator", AuthenticatorSceneFactory);
@@ -53,7 +57,12 @@ namespace Server.Users
 
         }
 
+        private void HostStarted(IHost host)
+        {
+            host.DependencyResolver.Resolve<ManagementClientAccessor>().GetApplicationClient().
+                ContinueWith(t => t.Result.CreatePersistentIfNotExists("authenticator", "authenticator"));
 
+        }
 
         private void AuthenticatorSceneFactory(ISceneHost scene)
         {
@@ -80,7 +89,7 @@ namespace Server.Users
                     {
                         //scene.GetComponent<ILogger>().Log(LogLevel.Trace, "user.login", "Authentication successful.", authResult);
 
-                       
+
                         await userSessions.SetUser(p.RemotePeer, authResult.AuthenticatedUser);
 
                         result.Success = true;
@@ -120,14 +129,15 @@ namespace Server.Users
                 await scene.GetComponent<IUserSessions>().LogOut(args.Peer);
             });
 
-            scene.Starting.Add(_ => {
+            scene.Starting.Add(_ =>
+            {
                 foreach (var provider in _config.AuthenticationProviders)
                 {
                     provider.Initialize(scene);
                 }
                 return Task.FromResult(true);
             });
-           
+
 
         }
         private Dictionary<string, string> GetAuthenticateRouteMetadata()
